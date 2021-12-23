@@ -21,3 +21,10 @@ The following variables are available for the application:
 | `ZULIP_USER_EMAIL` | _none_        | Email of the Zulip bot                          |
 | `ZULIP_API_KEY`    | _none_        | API key of Zulip bot                            |
 | `ZULIP_URL`        | _none_        | URL of the Zulip instance to fetch metrics from |
+
+
+## Available metrics
+The following metrics are provided by the exporter:
+| Name                     | Type        | Description                      |
+| ------------------------ | ----------- | -------------------------------- |
+| `zulip_streams_total`      | Gauge       | Total number of streams in Zulip |
