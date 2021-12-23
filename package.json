@@ -1,0 +1,21 @@
+{
+  "name": "prom-zulip-exporter",
+  "version": "0.0.1",
+  "description": "A prometheus exporter for the Zulip chat application",
+  "main": "prom-zulip-exporter.js",
+  "scripts": {
+    "start": "node prom-zulip-exporter.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint *.js"
+  },
+  "author": "Janek Berg",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.2",
+    "prom-client": "^14.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.5.0",
+    "eslint-config-google": "^0.14.0"
+  }
+}
