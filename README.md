@@ -29,3 +29,4 @@ The following metrics are provided by the exporter:
 | ------------------------ | ----------| -------- | -------------------------------------------------- |
 | `zulip_streams_total`    | Gauge     | _none_   | Total number of streams in Zulip                   |
 | `zulip_topics_total `    | Gauge     | `stream` | Total number of topics in Zulip, labeled by stream |
+| `zulip_users_total `     | Gauge     | `role`   | Total number of users in Zulip, labeled by role    |

@@ -30,6 +30,7 @@ let zulipClient;
 */
 let subscriptions;
 let topicsByStream;
+let users;
 
 /**
  * Fetches the necessary data from the API and stores it in the data
@@ -39,6 +40,7 @@ const fetchZulipData = async () => {
   try {
     // Get all subscribed topics
     subscriptions = await zulipClient.streams.subscriptions.retrieve();
+
     // For each stream, get all topics
     topicsByStream = {};
     for (stream of subscriptions.subscriptions) {
@@ -48,6 +50,9 @@ const fetchZulipData = async () => {
       // Store the topics by the stream name and ID
       topicsByStream[stream.stream_id + `_'${stream.name}'`] = topics.topics;
     }
+
+    // Get all users
+    users = await zulipClient.users.retrieve();
   } catch (error) {
     throw new Error('Failed to fetch from Zulip: ' + error.message);
   }
@@ -68,7 +73,7 @@ const streamNumberGauge = new promClient.Gauge({
   },
 });
 
-// Zulip topic gauge labeled by stream
+// Zulip topic number gauge labeled by stream
 const topicNumberGauge = new promClient.Gauge({
   name: 'zulip_topics_total',
   help: 'Total number of topics by stream in Zulip',
@@ -80,6 +85,81 @@ const topicNumberGauge = new promClient.Gauge({
         this.set({stream: stream}, topicsByStream[stream].length);
       }
     }
+  },
+});
+
+// Zulip user number gauge labeled by role
+const userNumberGauge = new promClient.Gauge({
+  name: 'zulip_users_total',
+  help: 'Total number of users by role in Zulip',
+  labelNames: ['role'],
+  collect() {
+    // Count the users by their role
+    let deactivatedUsers = 0;
+    let botGenericUsers = 0;
+    let botIncomingUsers = 0;
+    let botOutgoingUsers = 0;
+    let botEmbeddedUsers = 0;
+    let billingAdminUsers = 0;
+    let ownerUsers = 0;
+    let adminUsers = 0;
+    let moderatorUsers= 0;
+    let memberUsers = 0;
+    let guestUsers = 0;
+    let undefinedUsers = 0;
+    users.members.forEach((user) => {
+      if (!user.is_active) deactivatedUsers++;
+      else if (user.is_bot) {
+        // Differentiate between the bot types
+        switch (user.bot_type) {
+          case 1:
+            botGenericUsers++;
+            break;
+          case 2:
+            botIncomingUsers++;
+            break;
+          case 3:
+            botOutgoingUsers++;
+            break;
+          case 4:
+            botEmbeddedUsers++;
+        }
+      } else if (user.is_billing_admin) billingAdminUsers++;
+      else {
+        switch (user.role) {
+          case 100:
+            ownerUsers++;
+            break;
+          case 200:
+            adminUsers++;
+            break;
+          case 300:
+            moderatorUsers++;
+            break;
+          case 400:
+            memberUsers++;
+            break;
+          case 600:
+            guestUsers++;
+            break;
+          default:
+            undefinedUsers++;
+        }
+      }
+      // Set the values for the metric
+      this.set({role: 'deactivated'}, deactivatedUsers);
+      this.set({role: 'bot-generic'}, botGenericUsers);
+      this.set({role: 'bot-incoming-webhook'}, botIncomingUsers);
+      this.set({role: 'bot-outgoing-webhook'}, botOutgoingUsers);
+      this.set({role: 'bot-embedded'}, botEmbeddedUsers);
+      this.set({role: 'billing-admin'}, billingAdminUsers);
+      this.set({role: 'owner'}, ownerUsers);
+      this.set({role: 'admin'}, adminUsers);
+      this.set({role: 'moderator'}, moderatorUsers);
+      this.set({role: 'member'}, memberUsers);
+      this.set({role: 'guest'}, guestUsers);
+      this.set({role: 'undefined'}, undefinedUsers);
+    });
   },
 });
 
