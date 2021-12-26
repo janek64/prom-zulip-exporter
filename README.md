@@ -25,6 +25,7 @@ The following variables are available for the application:
 
 ## Available metrics
 The following metrics are provided by the exporter:
-| Name                     | Type        | Description                      |
-| ------------------------ | ----------- | -------------------------------- |
-| `zulip_streams_total`      | Gauge       | Total number of streams in Zulip |
+| Name                     | Type      | Labels   |  Description                                       |
+| ------------------------ | ----------| -------- | -------------------------------------------------- |
+| `zulip_streams_total`    | Gauge     | _none_   | Total number of streams in Zulip                   |
+| `zulip_topics_total `    | Gauge     | `stream` | Total number of topics in Zulip, labeled by stream |

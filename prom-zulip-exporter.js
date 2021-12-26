@@ -29,6 +29,7 @@ let zulipClient;
   it possible to generate multiple metrics from one API call.
 */
 let subscriptions;
+let topicsByStream;
 
 /**
  * Fetches the necessary data from the API and stores it in the data
@@ -36,7 +37,17 @@ let subscriptions;
  */
 const fetchZulipData = async () => {
   try {
+    // Get all subscribed topics
     subscriptions = await zulipClient.streams.subscriptions.retrieve();
+    // For each stream, get all topics
+    topicsByStream = {};
+    for (stream of subscriptions.subscriptions) {
+      const topics = await zulipClient.streams.topics.retrieve(
+          {stream_id: stream.stream_id},
+      );
+      // Store the topics by the stream name and ID
+      topicsByStream[stream.stream_id + `_'${stream.name}'`] = topics.topics;
+    }
   } catch (error) {
     throw new Error('Failed to fetch from Zulip: ' + error.message);
   }
@@ -52,8 +63,23 @@ const fetchZulipData = async () => {
 const streamNumberGauge = new promClient.Gauge({
   name: 'zulip_streams_total',
   help: 'Total number of streams in Zulip',
-  async collect() {
+  collect() {
     this.set(subscriptions.subscriptions.length);
+  },
+});
+
+// Zulip topic gauge labeled by stream
+const topicNumberGauge = new promClient.Gauge({
+  name: 'zulip_topics_total',
+  help: 'Total number of topics by stream in Zulip',
+  labelNames: ['stream'],
+  collect() {
+    for (const stream in topicsByStream) {
+      // Avoid prototype properties
+      if (topicsByStream.hasOwnProperty(stream)) {
+        this.set({stream: stream}, topicsByStream[stream].length);
+      }
+    }
   },
 });
 
@@ -67,7 +93,7 @@ app.get('/metrics', async (req, res) => {
     // Trigger the collect() methods and return the metrics
     res.send(await promClient.register.metrics());
   } catch (error) {
-    // res.send('Internal error');
+    console.log(error.message);
     res.status(500).end(error.message);
   }
 });
