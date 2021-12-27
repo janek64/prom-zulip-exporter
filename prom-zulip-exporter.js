@@ -6,7 +6,7 @@ const zulipAPIKey = process.env.ZULIP_API_KEY;
 const zulipURL = process.env.ZULIP_URL;
 
 // Ignore self-signed SSL certificates if configured
-if (process.env.IGNORE_SELF_SIGNED_SSL) {
+if (process.env.IGNORE_SELF_SIGNED_SSL === 'true') {
   process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
 }
 
