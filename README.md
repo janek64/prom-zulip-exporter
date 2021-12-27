@@ -11,16 +11,17 @@ This exporter requires a bot in Zulip which will serve as the access point for f
 4. Click "Create bot". The new bot will now be available under "Active Bots".
 5. User the provided bot email and API Key for the bot as environment variables of the exporter.
 
-**Note:** The bot will only be able to provide metrics about channel he has subscribed. To add a stream to the metrics, add the bot to the stream.
+**Note:** The bot will only be able to provide metrics about streams he has subscribed to. To add a stream to the metrics, add the bot to the stream.
 
 ### Environment Variables
 The following variables are available for the application:
-| Variable           | Default Value | Description                                     |
-| ------------------ | ------------- | ----------------------------------------------- |
-| `PORT`             | 9304          | Port to expose the metrics on                   |
-| `ZULIP_USER_EMAIL` | _none_        | Email of the Zulip bot                          |
-| `ZULIP_API_KEY`    | _none_        | API key of Zulip bot                            |
-| `ZULIP_URL`        | _none_        | URL of the Zulip instance to fetch metrics from |
+| Variable                 | Default Value | Description                                     |
+| ------------------------ | ------------- | ----------------------------------------------- |
+| `PORT`                   | 9304          | Port to expose the metrics on                   |
+| `ZULIP_USER_EMAIL`       | _none_        | Email of the Zulip bot                          |
+| `ZULIP_API_KEY`          | _none_        | API key of Zulip bot                            |
+| `ZULIP_URL`              | _none_        | URL of the Zulip instance to fetch metrics from |
+| `IGNORE_SELF_SIGNED_SSL` | false         | Ignore self-signed SSL certificates. **WARNING:** This globally disables any SSL certificate checks for this application. Only use this if you are working in an isolated network and know what you are doing! |
 
 
 ## Available metrics

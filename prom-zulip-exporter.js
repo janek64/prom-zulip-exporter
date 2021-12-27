@@ -5,6 +5,11 @@ const zulipUsername = process.env.ZULIP_USER_EMAIL;
 const zulipAPIKey = process.env.ZULIP_API_KEY;
 const zulipURL = process.env.ZULIP_URL;
 
+// Ignore self-signed SSL certificates if configured
+if (process.env.IGNORE_SELF_SIGNED_SSL) {
+  process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
+}
+
 // Load the express module and initialize an app
 const express = require('express');
 const app = express();
