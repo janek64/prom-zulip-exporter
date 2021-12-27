@@ -36,6 +36,7 @@ let zulipClient;
 let subscriptions;
 let topicsByStream;
 let users;
+let unreadMessages;
 
 /**
  * Fetches the necessary data from the API and stores it in the data
@@ -58,6 +59,31 @@ const fetchZulipData = async () => {
 
     // Get all users
     users = await zulipClient.users.retrieve();
+
+    // Get all unread messages and mark them as read
+    unreadMessages = await zulipClient.messages.retrieve({
+      anchor: 'first_unread',
+      num_before: 0,
+      num_after: 5000,
+    });
+    // Set all messages to 'read'
+    const headers = new Headers();
+    headers.set(
+        'Authorization',
+        'Basic ' + Buffer.from(zulipUsername + ':' + zulipAPIKey)
+            .toString('base64'),
+    );
+    const result = await fetch(
+        'https://zulip.nextlevelops.mni.thm.de/api/v1/mark_all_as_read',
+        {
+          method: 'POST',
+          headers: headers,
+        },
+    );
+    const json = await result.json();
+    if (!json.result === 'success') {
+      throw new Error('Setting messages to read not successful');
+    }
   } catch (error) {
     throw new Error('Failed to fetch from Zulip: ' + error.message);
   }
@@ -165,6 +191,16 @@ const userNumberGauge = new promClient.Gauge({
       this.set({role: 'guest'}, guestUsers);
       this.set({role: 'undefined'}, undefinedUsers);
     });
+  },
+});
+
+// Zulip message number counter
+const messageNumberCounter = new promClient.Counter({
+  name: 'zulip_messages_total',
+  help: 'Total number of messages in Zulip',
+  collect() {
+    // Increase the counter with the number of unread messages
+    this.inc(unreadMessages.messages.length);
   },
 });
 

@@ -21,7 +21,7 @@ The following variables are available for the application:
 | `ZULIP_USER_EMAIL`       | _none_        | Email of the Zulip bot                          |
 | `ZULIP_API_KEY`          | _none_        | API key of Zulip bot                            |
 | `ZULIP_URL`              | _none_        | URL of the Zulip instance to fetch metrics from |
-| `IGNORE_SELF_SIGNED_SSL` | false         | Ignore self-signed SSL certificates. **WARNING:** This globally disables any SSL certificate checks for this application. Only use this if you are working in an isolated network and know what you are doing! |
+| `IGNORE_SELF_SIGNED_SSL` | "false"       | Ignore self-signed SSL certificates. **WARNING:** This globally disables any SSL certificate checks for this application. Only use this if you are working in an isolated network and know what you are doing! |
 
 
 ## Available metrics
@@ -31,3 +31,4 @@ The following metrics are provided by the exporter:
 | `zulip_streams_total`    | Gauge     | _none_   | Total number of streams in Zulip                   |
 | `zulip_topics_total `    | Gauge     | `stream` | Total number of topics in Zulip, labeled by stream |
 | `zulip_users_total `     | Gauge     | `role`   | Total number of users in Zulip, labeled by role    |
+| `zulip_messages_total `  | Counter   | _none_   | Total number messages in Zulip. **Note:** Can only count messages since the last exporter restart because the bot is required to count new messages with his read/unread history (Zulip doesn't offer any other possibilities). Using `rate` for visualization is highly suggested.  |
