@@ -37,6 +37,7 @@ let subscriptions;
 let topicsByStream;
 let users;
 let unreadMessages;
+let serverInformation;
 
 /**
  * Fetches the necessary data from the API and stores it in the data
@@ -81,8 +82,27 @@ const fetchZulipData = async () => {
         },
     );
     const setReadJSON = await setReadResults.json();
-    if (!setReadJSON.result === 'success') {
+    if (setReadJSON.result !== 'success') {
       throw new Error('Setting messages to read not successful');
+    }
+
+    // Fetch information about the Zulip server
+    const serverInfoHeaders = new Headers();
+    serverInfoHeaders.set(
+        'Authorization',
+        'Basic ' + Buffer.from(zulipUsername + ':' + zulipAPIKey)
+            .toString('base64'),
+    );
+    const serverInfoResult = await fetch(
+        `${zulipURL}/api/v1/server_settings`,
+        {
+          method: 'GET',
+          headers: serverInfoHeaders,
+        },
+    );
+    serverInformation = await serverInfoResult.json();
+    if (serverInformation.result !== 'success') {
+      throw new Error('Reading server information not successful');
     }
   } catch (error) {
     throw new Error('Failed to fetch from Zulip: ' + error.message);
@@ -211,6 +231,38 @@ const messageNumberCounter = new promClient.Counter({
           1,
       );
     });
+  },
+});
+
+// Zulip server information gauge
+const serverInformationGauge = new promClient.Gauge({
+  name: 'zulip_server_info',
+  help: 'Metadata information about the Zulip server',
+  labelNames: [
+    'version',
+    'feature_level',
+    'realm_uri',
+    'realm_name',
+    'push_notitifications_enabled',
+    'email_auth_enabled',
+    'external_authentications',
+  ],
+  collect() {
+    // Construct a string of external authentication methods
+    const externalAuthentications =
+      serverInformation.external_authentication_methods.map((auth) => {
+        return auth.name;
+      }).join(';');
+    this.set({
+      version: serverInformation.zulip_version,
+      feature_level: serverInformation.zulip_feature_level,
+      realm_uri: serverInformation.realm_uri,
+      realm_name: serverInformation.realm_name,
+      push_notitifications_enabled:
+          serverInformation.push_notifications_enabled,
+      email_auth_enabled: serverInformation.email_auth_enabled,
+      external_authentications: externalAuthentications,
+    }, 1);
   },
 });
 

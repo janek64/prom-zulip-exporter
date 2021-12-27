@@ -32,3 +32,4 @@ The following metrics are provided by the exporter:
 | `zulip_topics_total `    | Gauge     | `stream` | Total number of topics in Zulip, labeled by stream |
 | `zulip_users_total `     | Gauge     | `role`   | Total number of users in Zulip, labeled by role    |
 | `zulip_messages_total `  | Counter   | `stream`, `topic`   | Total number messages in Zulip, labeled by stream and topic. **Note:** Can only count messages since the last exporter restart because the bot is required to count new messages with his read/unread history (Zulip doesn't offer any other possibilities). Using `rate` for visualization is highly suggested.  |
+| `zulip_server_info `    | Gauge     | `version`, `feature_level`, `realm_uri`, `realm_name`, `push_notitifications_enabled`, `email_auth_enabled`, `external_authentications` | Metadata information about the Zulip server (pseudo-metric) |
