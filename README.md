@@ -31,4 +31,4 @@ The following metrics are provided by the exporter:
 | `zulip_streams_total`    | Gauge     | _none_   | Total number of streams in Zulip                   |
 | `zulip_topics_total `    | Gauge     | `stream` | Total number of topics in Zulip, labeled by stream |
 | `zulip_users_total `     | Gauge     | `role`   | Total number of users in Zulip, labeled by role    |
-| `zulip_messages_total `  | Counter   | _none_   | Total number messages in Zulip. **Note:** Can only count messages since the last exporter restart because the bot is required to count new messages with his read/unread history (Zulip doesn't offer any other possibilities). Using `rate` for visualization is highly suggested.  |
+| `zulip_messages_total `  | Counter   | `stream`, `topic`   | Total number messages in Zulip, labeled by stream and topic. **Note:** Can only count messages since the last exporter restart because the bot is required to count new messages with his read/unread history (Zulip doesn't offer any other possibilities). Using `rate` for visualization is highly suggested.  |

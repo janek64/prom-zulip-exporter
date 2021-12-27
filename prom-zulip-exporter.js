@@ -67,21 +67,21 @@ const fetchZulipData = async () => {
       num_after: 5000,
     });
     // Set all messages to 'read'
-    const headers = new Headers();
-    headers.set(
+    const setReadHeaders = new Headers();
+    setReadHeaders.set(
         'Authorization',
         'Basic ' + Buffer.from(zulipUsername + ':' + zulipAPIKey)
             .toString('base64'),
     );
-    const result = await fetch(
-        'https://zulip.nextlevelops.mni.thm.de/api/v1/mark_all_as_read',
+    const setReadResults = await fetch(
+        `${zulipURL}/api/v1/mark_all_as_read`,
         {
           method: 'POST',
-          headers: headers,
+          headers: setReadHeaders,
         },
     );
-    const json = await result.json();
-    if (!json.result === 'success') {
+    const setReadJSON = await setReadResults.json();
+    if (!setReadJSON.result === 'success') {
       throw new Error('Setting messages to read not successful');
     }
   } catch (error) {
@@ -198,9 +198,19 @@ const userNumberGauge = new promClient.Gauge({
 const messageNumberCounter = new promClient.Counter({
   name: 'zulip_messages_total',
   help: 'Total number of messages in Zulip',
+  labelNames: ['stream', 'topic'],
   collect() {
-    // Increase the counter with the number of unread messages
-    this.inc(unreadMessages.messages.length);
+    // Go trough all messages
+    unreadMessages.messages.forEach((message) => {
+      // Increase the counter with the stream label by 1
+      this.inc(
+          {
+            stream: message.stream_id + `_'${message.display_recipient}'`,
+            topic: message.stream_id + `_'${message.subject}'`,
+          },
+          1,
+      );
+    });
   },
 });
 
