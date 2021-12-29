@@ -38,6 +38,9 @@ let topicsByStream;
 let users;
 let unreadMessages;
 let serverInformation;
+let linkifiers;
+let customEmojis;
+let customProfileFields;
 
 /**
  * Fetches the necessary data from the API and stores it in the data
@@ -58,8 +61,10 @@ const fetchZulipData = async () => {
       topicsByStream[stream.stream_id + `_'${stream.name}'`] = topics.topics;
     }
 
+
     // Get all users
     users = await zulipClient.users.retrieve();
+
 
     // Get all unread messages and mark them as read
     unreadMessages = await zulipClient.messages.retrieve({
@@ -86,6 +91,7 @@ const fetchZulipData = async () => {
       throw new Error('Setting messages to read not successful');
     }
 
+
     // Fetch information about the Zulip server
     const serverInfoHeaders = new Headers();
     serverInfoHeaders.set(
@@ -103,6 +109,66 @@ const fetchZulipData = async () => {
     serverInformation = await serverInfoResult.json();
     if (serverInformation.result !== 'success') {
       throw new Error('Reading server information not successful');
+    }
+
+
+    // Fetch the linkifier information
+    const linkifierHeaders = new Headers();
+    linkifierHeaders.set(
+        'Authorization',
+        'Basic ' + Buffer.from(zulipUsername + ':' + zulipAPIKey)
+            .toString('base64'),
+    );
+    const linkifierResult = await fetch(
+        `${zulipURL}/api/v1/realm/linkifiers`,
+        {
+          method: 'GET',
+          headers: linkifierHeaders,
+        },
+    );
+    linkifiers = await linkifierResult.json();
+    if (linkifiers.result !== 'success') {
+      throw new Error('Reading linkifier information not successful');
+    }
+
+
+    // Fetch the custom emoji information
+    const emojiHeaders = new Headers();
+    emojiHeaders.set(
+        'Authorization',
+        'Basic ' + Buffer.from(zulipUsername + ':' + zulipAPIKey)
+            .toString('base64'),
+    );
+    const emojiResult = await fetch(
+        `${zulipURL}/api/v1/realm/emoji`,
+        {
+          method: 'GET',
+          headers: emojiHeaders,
+        },
+    );
+    customEmojis = await emojiResult.json();
+    if (customEmojis.result !== 'success') {
+      throw new Error('Reading emoji information not successful');
+    }
+
+
+    // Fetch the custom emoji information
+    const profileFieldHeaders = new Headers();
+    profileFieldHeaders.set(
+        'Authorization',
+        'Basic ' + Buffer.from(zulipUsername + ':' + zulipAPIKey)
+            .toString('base64'),
+    );
+    const profileFieldResults = await fetch(
+        `${zulipURL}/api/v1/realm/profile_fields`,
+        {
+          method: 'GET',
+          headers: profileFieldHeaders,
+        },
+    );
+    customProfileFields = await profileFieldResults.json();
+    if (customProfileFields.result !== 'success') {
+      throw new Error('Reading profile field information not successful');
     }
   } catch (error) {
     throw new Error('Failed to fetch from Zulip: ' + error.message);
@@ -263,6 +329,33 @@ const serverInformationGauge = new promClient.Gauge({
       email_auth_enabled: serverInformation.email_auth_enabled,
       external_authentications: externalAuthentications,
     }, 1);
+  },
+});
+
+// Zulip linkifier number gauge
+const linkifierNumberGauge = new promClient.Gauge({
+  name: 'zulip_customization_linkifiers_total',
+  help: 'Total number of linkifiers in Zulip',
+  collect() {
+    this.set(linkifiers.linkifiers.length);
+  },
+});
+
+// Zulip custom emoji number gauge
+const emojiNumberGauge = new promClient.Gauge({
+  name: 'zulip_customization_emojis_total',
+  help: 'Total number of custom emojis in Zulip',
+  collect() {
+    this.set(Object.keys(customEmojis.emoji).length);
+  },
+});
+
+// Zulip custom profile fields number gauge
+const profileFieldNumberGauge = new promClient.Gauge({
+  name: 'zulip_customization_profilefields_total',
+  help: 'Total number of custom profile fields in Zulip',
+  collect() {
+    this.set(customProfileFields.custom_fields.length);
   },
 });
 
