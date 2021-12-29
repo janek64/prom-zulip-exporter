@@ -4,6 +4,7 @@ const port = process.env.PORT || 9304;
 const zulipUsername = process.env.ZULIP_USER_EMAIL;
 const zulipAPIKey = process.env.ZULIP_API_KEY;
 const zulipURL = process.env.ZULIP_URL;
+const activateUserPresence = process.env.ACTIVATE_USER_PRESENCE;
 
 // Ignore self-signed SSL certificates if configured
 if (process.env.IGNORE_SELF_SIGNED_SSL === 'true') {
@@ -36,6 +37,7 @@ let zulipClient;
 let subscriptions;
 let topicsByStream;
 let users;
+let userPresences;
 let unreadMessages;
 let serverInformation;
 let linkifiers;
@@ -65,6 +67,35 @@ const fetchZulipData = async () => {
     // Get all users
     users = await zulipClient.users.retrieve();
 
+    // For each user, get his presence
+    userPresences = [];
+    // Only get this metric if activated by the user (can take longer when
+    // when the instance has many users)
+    if (activateUserPresence === 'true') {
+      const userPresenceHeaders = new Headers();
+      userPresenceHeaders.set(
+          'Authorization',
+          'Basic ' + Buffer.from(zulipUsername + ':' + zulipAPIKey)
+              .toString('base64'),
+      );
+      for (const user of users.members) {
+        // Fetch the presence information (only possible for active human users)
+        if (user.is_active && !user.is_bot) {
+          const userPresenceResult = await fetch(
+              `${zulipURL}/api/v1/users/${user.user_id}/presence`,
+              {
+                method: 'GET',
+                headers: userPresenceHeaders,
+              },
+          );
+          const userPresenceInformation = await userPresenceResult.json();
+          if (userPresenceInformation.result !== 'success') {
+            throw new Error('Reading user presence information not successful');
+          }
+          userPresences.push(userPresenceInformation);
+        }
+      }
+    }
 
     // Get all unread messages and mark them as read
     unreadMessages = await zulipClient.messages.retrieve({
@@ -277,6 +308,41 @@ const userNumberGauge = new promClient.Gauge({
       this.set({role: 'guest'}, guestUsers);
       this.set({role: 'undefined'}, undefinedUsers);
     });
+  },
+});
+
+// Zulip user presence number gauge labeled by status
+const userPresenceNumberGauge = new promClient.Gauge({
+  name: 'zulip_users_presences_total',
+  help: 'Total number of users presences by status in Zulip',
+  labelNames: ['status'],
+  collect() {
+    let activeUsers = 0;
+    let idleUsers = 0;
+    let offlineUsers = 0;
+    // Reference timestamp
+    // 3 minutes = 1ms * 1000 * 60 * 3 = 180000ms
+    const referenceTimestamp = Date.now() - 180000;
+    userPresences.forEach((userPresence) => {
+      // If the timestamp is older than 3 minutes, the user is offline
+      // Multiplication by 1000 to convert seconds to milliseconds
+      if (
+        referenceTimestamp <= userPresence.presence.aggregated.timestamp * 1000
+      ) {
+        // Check which kind of interaction was registered by Zulip
+        if (userPresence.presence.aggregated.status === 'active') {
+          activeUsers++;
+        } else {
+          idleUsers++;
+        }
+      } else {
+        offlineUsers++;
+      }
+    });
+    // Set the values for the metric
+    this.set({status: 'active'}, activeUsers);
+    this.set({status: 'idle'}, idleUsers);
+    this.set({status: 'offline'}, offlineUsers);
   },
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "prom-zulip-exporter",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A prometheus exporter for the Zulip chat application",
   "main": "prom-zulip-exporter.js",
   "scripts": {
